@@ -1,0 +1,62 @@
+import csv
+from collections import Counter
+from io import StringIO
+
+# Dados de logs
+dados = """data,ip,status
+2026-10-01 08:00,192.168.1.10,sucesso
+2026-10-01 08:05,192.168.1.20,falha
+2026-10-01 08:06,192.168.1.20,falha
+2026-10-01 08:07,192.168.1.20,falha
+2026-10-01 08:08,192.168.1.20,falha
+2026-10-01 08:50,192.168.1.10,sucesso
+"""
+
+limite_falhas = 3
+
+
+def analisar_logs(conteudo):
+    tentativas = Counter()
+    falhas = Counter()
+    total = 0
+
+    leitor = csv.DictReader(
+        StringIO(conteudo),
+        skipinitialspace=True
+    )
+
+    for linha in leitor:
+        ip = linha["ip"].strip()
+        status = linha["status"].strip().upper()
+
+        if not ip or status not in {"SUCESSO", "FALHA"}:
+            continue
+
+        tentativas[ip] += 1
+        total += 1
+
+        if status == "FALHA":
+            falhas[ip] += 1
+
+    print("=== RELATÓRIO DE LOGS ===")
+    print(f"Total de registros válidos: {total}")
+
+    for ip, quantidade in tentativas.most_common():
+        print(
+            f"IP: {ip} | Tentativas: {quantidade} | "
+            f"Falhas: {falhas[ip]}"
+        )
+
+    print("\nALERTAs")
+    encontrou_alerta = False
+
+    for ip, quantidade in falhas.items():
+        if quantidade >= limite_falhas:
+            print(f"ATENÇÃO: {ip} possui {quantidade} falhas.")
+            encontrou_alerta = True
+
+    if not encontrou_alerta:
+        print("Nenhum IP atingiu o limite de falhas.")
+
+
+analisar_logs(dados)
